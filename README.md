@@ -2,6 +2,9 @@
 
 A comprehensive web application to track your Bitcoin transactions, calculate cost basis, and monitor profit/loss from your Bitcoin node data.
 
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-blue?style=flat&logo=github)](https://github.com/Portal-Doctor/bitcoin-cost-tracker)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 ## Features
 
 - **Transaction Tracking**: Automatically categorizes transactions as purchases, sells, or wallet moves
@@ -23,8 +26,8 @@ A comprehensive web application to track your Bitcoin transactions, calculate co
 1. **Clone and install dependencies**:
 
    ```bash
-   git clone <repository-url>
-   cd bitcoin-cost
+   git clone https://github.com/Portal-Doctor/bitcoin-cost-tracker.git
+   cd bitcoin-cost-tracker
    yarn install
    ```
 
@@ -51,13 +54,19 @@ A comprehensive web application to track your Bitcoin transactions, calculate co
    rpcbind=127.0.0.1
    ```
 
-4. **Start the development server**:
+4. **Set up the database** (optional - for comment functionality):
+
+   ```bash
+   yarn setup-db
+   ```
+
+5. **Start the development server**:
 
    ```bash
    yarn dev
    ```
 
-5. **Open your browser** and navigate to `http://localhost:3000`
+6. **Open your browser** and navigate to `http://localhost:3000`
 
 ## Usage
 
