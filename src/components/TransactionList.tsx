@@ -1,30 +1,45 @@
 'use client';
 
-import { Transaction, TransactionType } from '../types/bitcoin';
+import { Box, Paper, Typography, List, ListItem, Chip, Divider } from '@mui/material';
+import { TrendingUp, TrendingDown, SwapHoriz } from '@mui/icons-material';
+import { Transaction } from '../types/bitcoin';
 import CommentSection from './CommentSection';
 
 interface TransactionListProps {
   title: string;
   transactions: Transaction[];
-  type: TransactionType;
+  type: 'purchase' | 'sell' | 'move';
 }
 
 export default function TransactionList({ title, transactions, type }: TransactionListProps) {
-  const getTypeColor = (type: TransactionType) => {
+  const getTypeIcon = () => {
     switch (type) {
-      case TransactionType.PURCHASE:
-        return 'text-green-600 bg-green-50 border-green-200';
-      case TransactionType.SELL:
-        return 'text-red-600 bg-red-50 border-red-200';
-      case TransactionType.MOVE:
-        return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'purchase':
+        return <TrendingUp color="success" />;
+      case 'sell':
+        return <TrendingDown color="error" />;
+      case 'move':
+        return <SwapHoriz color="info" />;
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return null;
+    }
+  };
+
+  const getTypeColor = () => {
+    switch (type) {
+      case 'purchase':
+        return 'success';
+      case 'sell':
+        return 'error';
+      case 'move':
+        return 'info';
+      default:
+        return 'default';
     }
   };
 
   const formatAmount = (amount: number) => {
-    return `${amount.toFixed(8)} BTC`;
+    return `${Math.abs(amount).toFixed(8)} BTC`;
   };
 
   const formatPrice = (price: number) => {
@@ -39,78 +54,151 @@ export default function TransactionList({ title, transactions, type }: Transacti
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
   if (transactions.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
-        <p className="text-gray-500 text-center py-8">No {title.toLowerCase()} found</p>
-      </div>
+      <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          {getTypeIcon()}
+          <Typography variant="h6" sx={{ ml: 1 }}>
+            {title}
+          </Typography>
+          <Chip 
+            label="0" 
+            color={getTypeColor() as any} 
+            size="small" 
+            sx={{ ml: 'auto' }} 
+          />
+        </Box>
+        <Typography color="text.secondary" variant="body2">
+          No {type} transactions found.
+        </Typography>
+      </Paper>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+    <Paper elevation={1} sx={{ mb: 3 }}>
+      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {getTypeIcon()}
+          <Typography variant="h6" sx={{ ml: 1 }}>
+            {title}
+          </Typography>
+          <Chip 
+            label={transactions.length} 
+            color={getTypeColor() as any} 
+            size="small" 
+            sx={{ ml: 'auto' }} 
+          />
+        </Box>
+      </Box>
       
-      <div className="space-y-3">
-        {transactions.map((tx) => (
-          <div key={tx.txid} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-            <div className="flex justify-between items-start mb-2">
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getTypeColor(type)}`}>
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </span>
-              <span className="text-sm text-gray-500">{formatDate(tx.date)}</span>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Amount:</span>
-                <span className="font-medium">{formatAmount(tx.amount)}</span>
-              </div>
+      <List sx={{ p: 0 }}>
+        {transactions.map((transaction, index) => (
+          <Box key={transaction.txid}>
+            <ListItem sx={{ flexDirection: 'column', alignItems: 'stretch' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', mb: 1 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                    {transaction.txid.substring(0, 16)}...
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDate(transaction.date)}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ textAlign: 'right', ml: 2 }}>
+                  <Typography variant="h6" color={`${getTypeColor()}.main`} sx={{ fontWeight: 'bold' }}>
+                    {formatAmount(transaction.amount)}
+                  </Typography>
+                  {transaction.price && (
+                    <Typography variant="body2" color="text.secondary">
+                      {formatPrice(transaction.price.price)}
+                    </Typography>
+                  )}
+                  {transaction.fee && transaction.fee > 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                      Fee: {formatAmount(transaction.fee)}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
               
-              {tx.price && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Price:</span>
-                  <span className="font-medium">{formatPrice(tx.price.price)}</span>
-                </div>
+              {transaction.costBasis && (
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Cost Basis: {formatPrice(transaction.costBasis)}
+                  </Typography>
+                </Box>
               )}
               
-              {tx.costBasis && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Cost Basis:</span>
-                  <span className="font-medium">{formatPrice(tx.costBasis)}</span>
-                </div>
+              {transaction.profitLoss && (
+                <Box sx={{ mb: 1 }}>
+                  <Typography 
+                    variant="body2" 
+                    color={transaction.profitLoss >= 0 ? 'success.main' : 'error.main'}
+                  >
+                    P&L: {formatPrice(transaction.profitLoss)}
+                  </Typography>
+                </Box>
               )}
               
-              {tx.profitLoss !== null && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">P&L:</span>
-                  <span className={`font-medium ${tx.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatPrice(tx.profitLoss)}
-                  </span>
-                </div>
-              )}
-              
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Fee:</span>
-                <span className="font-medium">{formatAmount(tx.fee)}</span>
-              </div>
-              
-              <div className="pt-2 border-t">
-                <p className="text-xs text-gray-500 font-mono break-all">
-                  TXID: {tx.txid}
-                </p>
-              </div>
-              
-              {/* Comment Section */}
-              <CommentSection txid={tx.txid} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+                             {/* Address Information */}
+               <Box sx={{ mt: 2, mb: 1 }}>
+                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                   Addresses:
+                 </Typography>
+                 <Box sx={{ mt: 1 }}>
+                   {transaction.addresses.length > 0 ? (
+                     transaction.addresses.map((addr, addrIndex) => (
+                       <Box key={addrIndex} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                         <Box
+                           sx={{
+                             width: 8,
+                             height: 8,
+                             borderRadius: '50%',
+                             mr: 1,
+                             bgcolor: addr.isInputAddress && addr.isOutputAddress 
+                               ? 'warning.main' 
+                               : addr.isInputAddress 
+                                 ? 'error.main' 
+                                 : 'success.main'
+                           }}
+                         />
+                         <Typography variant="caption" sx={{ fontFamily: 'monospace', mr: 1 }}>
+                           {addr.address.substring(0, 8)}...{addr.address.substring(addr.address.length - 8)}
+                         </Typography>
+                         <Chip 
+                           label={addr.type} 
+                           size="small" 
+                           variant="outlined"
+                           color={addr.type === 'multi-sig' ? 'warning' : 'default'}
+                           sx={{ mr: 1, fontSize: '0.7rem' }}
+                         />
+                         <Typography variant="caption" color="text.secondary">
+                           {addr.scriptType}
+                         </Typography>
+                       </Box>
+                     ))
+                   ) : (
+                     <Typography variant="caption" color="text.secondary">
+                       No address information available
+                     </Typography>
+                   )}
+                 </Box>
+               </Box>
+               
+               <CommentSection txid={transaction.txid} />
+             </ListItem>
+             {index < transactions.length - 1 && <Divider />}
+           </Box>
+         ))}
+       </List>
+     </Paper>
+   );
+ }

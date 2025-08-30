@@ -1,6 +1,19 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { 
+  Box, 
+  TextField, 
+  Button, 
+  List, 
+  ListItem, 
+  IconButton, 
+  Typography,
+  Divider,
+  Alert,
+  CircularProgress
+} from '@mui/material';
+import { Send, Delete, Comment } from '@mui/icons-material';
 
 interface Comment {
   id: string;
@@ -16,23 +29,22 @@ interface CommentSectionProps {
 
 export default function CommentSection({ txid }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
+  const [newComment, setNewComment] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchComments = useCallback(async () => {
     setLoading(true);
-    setError('');
+    setError(null);
     
     try {
       const response = await fetch(`/api/comments?txid=${txid}`);
       if (!response.ok) {
         throw new Error('Failed to fetch comments');
       }
-      
       const data = await response.json();
-      setComments(data.comments);
+      setComments(data.comments || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load comments');
     } finally {
@@ -46,12 +58,11 @@ export default function CommentSection({ txid }: CommentSectionProps) {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!newComment.trim()) return;
-    
+
     setSubmitting(true);
-    setError('');
-    
+    setError(null);
+
     try {
       const response = await fetch('/api/comments', {
         method: 'POST',
@@ -68,9 +79,8 @@ export default function CommentSection({ txid }: CommentSectionProps) {
         throw new Error('Failed to add comment');
       }
 
-      const data = await response.json();
-      setComments([data.comment, ...comments]);
       setNewComment('');
+      await fetchComments(); // Refresh comments
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add comment');
     } finally {
@@ -88,7 +98,7 @@ export default function CommentSection({ txid }: CommentSectionProps) {
         throw new Error('Failed to delete comment');
       }
 
-      setComments(comments.filter(comment => comment.id !== commentId));
+      await fetchComments(); // Refresh comments
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete comment');
     }
@@ -105,66 +115,75 @@ export default function CommentSection({ txid }: CommentSectionProps) {
   };
 
   return (
-    <div className="mt-4 border-t pt-4">
-      <h4 className="text-sm font-medium text-gray-900 mb-3">Comments</h4>
-      
+    <Box sx={{ mt: 2, width: '100%' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+        <Comment sx={{ mr: 1, fontSize: 20 }} />
+        <Typography variant="subtitle2" color="text.secondary">
+          Comments ({comments.length})
+        </Typography>
+      </Box>
+
       {error && (
-        <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-red-800 text-sm">
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
-        </div>
+        </Alert>
       )}
 
-      {/* Add Comment Form */}
-      <form onSubmit={handleSubmitComment} className="mb-4">
-        <div className="flex gap-2">
-          <input
-            type="text"
+      <Box component="form" onSubmit={handleSubmitComment} sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Add a comment..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add a comment..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             disabled={submitting}
+            variant="outlined"
           />
-          <button
+          <Button
             type="submit"
+            variant="contained"
+            size="small"
             disabled={!newComment.trim() || submitting}
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            startIcon={submitting ? <CircularProgress size={16} /> : <Send />}
           >
             {submitting ? 'Adding...' : 'Add'}
-          </button>
-        </div>
-      </form>
+          </Button>
+        </Box>
+      </Box>
 
-      {/* Comments List */}
       {loading ? (
-        <div className="text-center py-4 text-gray-500 text-sm">
-          Loading comments...
-        </div>
-      ) : comments.length === 0 ? (
-        <div className="text-center py-4 text-gray-500 text-sm">
-          No comments yet. Be the first to add one!
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {comments.map((comment) => (
-            <div key={comment.id} className="bg-gray-50 rounded-lg p-3">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-sm text-gray-900">{comment.content}</p>
-                <button
-                  onClick={() => handleDeleteComment(comment.id)}
-                  className="text-red-600 hover:text-red-800 text-xs ml-2"
-                  title="Delete comment"
-                >
-                  ×
-                </button>
-              </div>
-              <p className="text-xs text-gray-500">
-                {formatDate(comment.createdAt)}
-              </p>
-            </div>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+          <CircularProgress size={24} />
+        </Box>
+      ) : comments.length > 0 && (
+        <List sx={{ p: 0, bgcolor: 'grey.50', borderRadius: 1 }}>
+          {comments.map((comment, index) => (
+            <Box key={comment.id}>
+              <ListItem sx={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                      {comment.content}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatDate(comment.createdAt)}
+                    </Typography>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteComment(comment.id)}
+                    sx={{ ml: 1 }}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Box>
+              </ListItem>
+              {index < comments.length - 1 && <Divider />}
+            </Box>
           ))}
-        </div>
+        </List>
       )}
-    </div>
+    </Box>
   );
 }

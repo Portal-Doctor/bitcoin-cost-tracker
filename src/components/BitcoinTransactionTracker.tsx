@@ -1,27 +1,28 @@
 'use client';
 
 import { useState } from 'react';
+import { Box, Alert, CircularProgress, Typography } from '@mui/material';
+import { Transaction } from '../types/bitcoin';
 import WalletInput from './WalletInput';
 import TransactionList from './TransactionList';
 import TransactionSummary from './TransactionSummary';
-import { Transaction, TransactionType } from '../types/bitcoin';
 
 export default function BitcoinTransactionTracker() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleWalletSubmit = async (address: string) => {
+  const handleWalletSubmit = async (walletAddress: string) => {
     setLoading(true);
-    setError('');
-
+    setError(null);
+    
     try {
       const response = await fetch('/api/transactions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ walletAddress: address }),
+        body: JSON.stringify({ walletAddress }),
       });
 
       if (!response.ok) {
@@ -29,7 +30,7 @@ export default function BitcoinTransactionTracker() {
       }
 
       const data = await response.json();
-      setTransactions(data.transactions);
+      setTransactions(data.transactions || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -37,54 +38,59 @@ export default function BitcoinTransactionTracker() {
     }
   };
 
-  const purchases = transactions.filter(tx => tx.type === TransactionType.PURCHASE);
-  const sells = transactions.filter(tx => tx.type === TransactionType.SELL);
-  const moves = transactions.filter(tx => tx.type === TransactionType.MOVE);
+  const purchases = transactions.filter(tx => tx.type === 'purchase');
+  const sells = transactions.filter(tx => tx.type === 'sell');
+  const moves = transactions.filter(tx => tx.type === 'move');
 
   return (
-    <div className="space-y-8">
-      <WalletInput onSubmit={handleWalletSubmit} loading={loading} />
+    <Box>
+      <WalletInput onSubmit={handleWalletSubmit} />
+      
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
+      )}
       
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">{error}</p>
-        </div>
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
       )}
-
-      {loading && (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Processing transactions...</p>
-        </div>
-      )}
-
+      
       {transactions.length > 0 && (
-        <>
+        <Box sx={{ mt: 4 }}>
           <TransactionSummary 
-            purchases={purchases}
-            sells={sells}
-            moves={moves}
+            purchases={purchases} 
+            sells={sells} 
+            moves={moves} 
           />
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" gutterBottom>
+              Transaction Details
+            </Typography>
+            
             <TransactionList 
               title="Purchases" 
-              transactions={purchases}
-              type={TransactionType.PURCHASE}
+              transactions={purchases} 
+              type="purchase" 
             />
+            
             <TransactionList 
               title="Sells" 
-              transactions={sells}
-              type={TransactionType.SELL}
+              transactions={sells} 
+              type="sell" 
             />
+            
             <TransactionList 
               title="Wallet Moves" 
-              transactions={moves}
-              type={TransactionType.MOVE}
+              transactions={moves} 
+              type="move" 
             />
-          </div>
-        </>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

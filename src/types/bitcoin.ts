@@ -13,10 +13,18 @@ export interface BitcoinPrice {
 export interface UTXO {
   txid: string;
   vout: number;
-  address: string;
   amount: number;
-  confirmations: number;
-  spendable: boolean;
+  address: string;
+  scriptPubKey: string;
+}
+
+export interface AddressInfo {
+  address: string;
+  type: 'single-sig' | 'multi-sig' | 'unknown';
+  scriptType: string;
+  isChangeAddress?: boolean;
+  isInputAddress: boolean;
+  isOutputAddress: boolean;
 }
 
 export interface Transaction {
@@ -30,8 +38,9 @@ export interface Transaction {
   price: BitcoinPrice | null;
   costBasis: number | null;
   profitLoss: number | null;
-  addresses: string[];
-  description?: string;
+  addresses: AddressInfo[];
+  inputAddresses: AddressInfo[];
+  outputAddresses: AddressInfo[];
 }
 
 export interface TransactionSummary {
@@ -39,10 +48,10 @@ export interface TransactionSummary {
   totalSells: number;
   totalMoves: number;
   totalFees: number;
+  remainingBalance: number;
+  totalProfitLoss: number;
   averagePurchasePrice: number;
   averageSellPrice: number;
-  totalProfitLoss: number;
-  remainingBalance: number;
 }
 
 export interface WalletConfig {
@@ -50,5 +59,4 @@ export interface WalletConfig {
   port: number;
   username: string;
   password: string;
-  timeout?: number;
 }
