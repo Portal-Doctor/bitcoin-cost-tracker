@@ -54,11 +54,13 @@ A comprehensive web application to track your Bitcoin transactions, calculate co
    rpcbind=127.0.0.1
    ```
 
-4. **Set up the database** (optional - for comment functionality):
+4. **Set up the database** (required for comment functionality):
 
    ```bash
    yarn setup-db
    ```
+   
+   > **Note**: The database file (`prisma/dev.db`) is not included in the repository. Each user needs to run the setup command to create their own local database.
 
 5. **Start the development server**:
 
