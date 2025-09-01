@@ -11,11 +11,262 @@ datasource db {
 }
 
 model Comment {
+  id        String   @id @default(cuid())
+  txid      String   // Bitcoin transaction ID
+  content   String   // Comment content
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([txid])
+}
+
+model TransactionPrice {
+  id        String   @id @default(cuid())
+  txid      String   @unique // Bitcoin transaction ID
+  date      DateTime // Transaction date
+  price     Float    // Bitcoin price in USD
+  currency  String   @default("USD")
+  source    String   @default("mempool.space") // Price data source
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([txid])
+}
+
+// New models for transaction trees and wallet data
+
+model TransactionTree {
+  id            String   @id @default(cuid())
+  treeId        String   @unique // e.g., "tree-0", "tree-1"
+  rootId        String   // Root transaction ID
+  totalAmount   Float    // Total BTC amount in the tree
+  totalValueUSD Float?   // Total USD value
+  dateRange     String   // JSON: {start: string, end: string}
+  nodeCount     Int      // Number of transactions in the tree
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  nodes         TransactionNode[]
+  comments      TreeComment[]
+  utxoFlows     UTXOFlow[] @relation("TreeUTXOFlows")
+
+  @@index([treeId])
+  @@index([rootId])
+}
+
+model TransactionNode {
+  id            String   @id @default(cuid())
+  txid          String   @unique // Bitcoin transaction ID
+  treeId        String   // Reference to TransactionTree
+  parentId      String?  // Parent transaction ID (for tree structure)
+  date          DateTime // Transaction date
+  totalAmount   Float    // Transaction amount in BTC
+  confirmed     Boolean  @default(true)
+  price         Float?   // BTC price at transaction time
+  priceUSD      Float?   // USD value of transaction
+  inputs        String   // JSON array of inputs
+  outputs       String   // JSON array of outputs
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  tree          TransactionTree @relation(fields: [treeId], references: [treeId])
+  // Note: walletTransactions relationship is handled manually via txid matching
+
+  @@index([txid])
+  @@index([treeId])
+  @@index([parentId])
+  @@index([date])
+}
+
+model TreeComment {
   id          String   @id @default(cuid())
-  txid        String   // Bitcoin transaction ID
+  treeId      String   // Tree identifier
+  nodeId      String   // Transaction node ID
   content     String   // Comment content
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Relations
+  tree        TransactionTree @relation(fields: [treeId], references: [treeId])
+
+  @@unique([treeId, nodeId])
+  @@index([treeId])
+  @@index([nodeId])
+}
+
+model WalletCSV {
+  id            String   @id @default(cuid())
+  walletName    String   // Wallet name (from filename)
+  fileName      String   // Original CSV filename
+  lastModified  DateTime // Last modification time of CSV file
+  transactionCount Int   // Number of transactions in this wallet
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  transactions  WalletTransaction[]
+  addresses     WalletAddress[]
+
+  @@unique([walletName])
+  @@index([walletName])
+  @@index([fileName])
+}
+
+model WalletTransaction {
+  id            String   @id @default(cuid())
+  walletCSVId   String   // Foreign key to WalletCSV
+  walletName    String   // Wallet name (for convenience)
+  txid          String   // Bitcoin transaction ID
+  date          DateTime // Transaction date
+  label         String   // Transaction label/description
+  value         Int      // Amount in sats (positive for received, negative for sent)
+  balance       Int      // Balance after transaction in sats
+  fee           Int      // Transaction fee in sats
+  type          String   // "input" or "output"
+  confirmed     Boolean  @default(true)
+  priceUSD      Float?   // USD value of the transaction
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  walletCSV     WalletCSV @relation(fields: [walletCSVId], references: [id], onDelete: Cascade)
+  // Note: transactionNode relationship is handled manually via txid matching
+
+  @@unique([walletName, txid])
+  @@index([walletCSVId])
+  @@index([walletName])
   @@index([txid])
+  @@index([date])
+  @@index([type])
+}
+
+// New models for network UTXO data and relationships
+
+model NetworkTransaction {
+  id            String   @id @default(cuid())
+  txid          String   @unique // Bitcoin transaction ID
+  blockHeight   Int?     // Block height
+  blockTime     DateTime? // Block timestamp
+  fee           Int?     // Transaction fee in sats
+  size          Int?     // Transaction size in bytes
+  weight        Int?     // Transaction weight
+  version       Int?     // Transaction version
+  locktime      Int?     // Transaction locktime
+  rawData       String   // JSON string of complete transaction data from API
+  source        String   // API source (mempool.space, blockstream, etc.)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  utxoFlows     UTXOFlow[] @relation("NetworkTransactionUTXOFlows")
+
+  @@index([txid])
+  @@index([blockHeight])
+  @@index([blockTime])
+  @@index([source])
+}
+
+model UTXOFlow {
+  id            String   @id @default(cuid())
+  txid          String   // Bitcoin transaction ID
+  treeId        String?  // Associated transaction tree ID
+  fromWallet    String?  // Source wallet name
+  toWallet      String?  // Destination wallet name
+  fromAddress   String   // Source address
+  toAddress     String   // Destination address
+  amount        Float    // Amount in BTC
+  fee           Float?   // Transaction fee in BTC
+  blockHeight   Int?     // Block height
+  blockTime     DateTime? // Block timestamp
+  flowType      String   // "external", "consolidation", "internal"
+  isChange      Boolean  @default(false) // Whether this is a change output
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  networkTransaction NetworkTransaction? @relation("NetworkTransactionUTXOFlows", fields: [txid], references: [txid])
+  tree          TransactionTree? @relation("TreeUTXOFlows", fields: [treeId], references: [treeId])
+
+  @@unique([txid, fromAddress, toAddress])
+  @@index([txid])
+  @@index([treeId])
+  @@index([fromWallet])
+  @@index([toWallet])
+  @@index([fromAddress])
+  @@index([toAddress])
+  @@index([flowType])
+  @@index([blockHeight])
+  @@index([blockTime])
+}
+
+model WalletAddress {
+  id            String   @id @default(cuid())
+  walletCSVId   String   // Foreign key to WalletCSV
+  walletName    String   // Wallet name (for convenience)
+  address       String   // Bitcoin address
+  addressType   String   // "legacy", "segwit", "native-segwit", "taproot"
+  derivationPath String? // Derivation path if known
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  walletCSV     WalletCSV @relation(fields: [walletCSVId], references: [id], onDelete: Cascade)
+
+  @@unique([walletName, address])
+  @@index([walletCSVId])
+  @@index([walletName])
+  @@index([address])
+  @@index([addressType])
+}
+
+model TransactionRelationship {
+  id            String   @id @default(cuid())
+  parentTxid    String   // Parent transaction ID
+  childTxid     String   // Child transaction ID
+  relationshipType String // "utxo_spend", "change_output", "external_transfer"
+  amount        Float    // Amount involved in the relationship
+  address       String?  // Address involved in the relationship
+  walletName    String?  // Wallet name if known
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([parentTxid, childTxid])
+  @@index([parentTxid])
+  @@index([childTxid])
+  @@index([relationshipType])
+  @@index([walletName])
+  @@index([address])
+}
+
+model TransactionLabel {
+  id            String   @id @default(cuid())
+  txid          String   // Bitcoin transaction ID
+  walletName    String   // Wallet name (for organization)
+  label         String   // User-created label
+  color         String?  // Optional color for the label
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([txid, walletName])
+  @@index([txid])
+  @@index([walletName])
+  @@index([label])
+}
+
+// Legacy Wallet model (keeping for backward compatibility)
+model Wallet {
+  id             String   @id @default(cuid())
+  name           String   // Wallet name
+  xpub           String   @unique // Extended public key
+  addresses      String   // JSON array of derived addresses
+  addressType    String   // legacy, segwit, native-segwit, taproot
+  derivationPath String   // Derivation path used
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([name])
+  @@index([addressType])
 }

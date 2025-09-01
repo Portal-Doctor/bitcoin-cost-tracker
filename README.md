@@ -1,243 +1,243 @@
-# Bitcoin Cost Basis Tracker
+# Bitcoin Transaction Tree Visualizer
 
-A comprehensive web application to track your Bitcoin transactions, calculate cost basis, monitor profit/loss, and analyze address types from your Bitcoin node data.
+A comprehensive Next.js application for visualizing Bitcoin transaction trees with UTXO flow tracking, price data integration, and persistent commenting system.
 
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-blue?style=flat&logo=github)](https://github.com/Portal-Doctor/bitcoin-cost-tracker)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+## 🌟 Features
 
-## Features
+### Tree List Page
 
-### 🔍 **Transaction Analysis**
+- **Transaction Tree Overview**: View all root transactions with total Bitcoin amounts and USD values
+- **Tree Summaries**: See transaction counts, date ranges, and descriptions for each tree
+- **Interactive Cards**: Click to explore individual transaction trees
+- **Price Integration**: Historical Bitcoin prices and USD value calculations
 
-- **Smart Categorization**: Automatically categorizes transactions as purchases, sells, or wallet moves
-- **Address Tracking**: Shows all addresses involved in each transaction with input/output flow
-- **Multi-sig Detection**: Identifies single-sig vs multi-sig addresses (P2PKH, P2SH, P2WPKH, P2WSH)
-- **Script Type Analysis**: Displays script types and security models for each address
+### Tree Explore Page
 
-### **Financial Tracking**
+- **Detailed Transaction View**:
 
-- **Cost Basis Calculation**: Calculates average cost basis using FIFO method
-- **Profit/Loss Tracking**: Shows realized gains/losses for each transaction
-- **Historical Price Data**: Fetches Bitcoin price data from Yahoo Finance API
-- **Transaction Summaries**: Overview of total purchases, sells, moves, and fees
+  - Full transaction details with inputs and outputs
+  - Address type identification (single-sig vs multisig)
+  - Historical Bitcoin prices and USD values
+  - Interactive expand/collapse functionality
+  - Persistent commenting system for documentation
 
-### **Technical Features**
+- **Flow Diagram View**:
+  - Visual representation of UTXO flow between transactions
+  - Interactive expand/collapse functionality
+  - Color-coded address types and transaction status
+  - Price data display in visual format
 
-- **Real-time Node Integration**: Connects directly to your Bitcoin Core node
-- **Transaction Comments**: Add, view, and delete comments for any transaction
-- **SQLite Database**: Persistent storage using Prisma ORM
-- **API Documentation**: Built-in Swagger UI for API exploration
-- **Modern UI**: Material-UI components with responsive design
+### Address Type Detection
 
-### **User Interface**
+- **Single-sig addresses**: Legacy (1...), Native SegWit (bc1q...)
+- **Multisig addresses**: P2SH (3...), Taproot (bc1p...)
+- **Visual indicators**: Color-coded chips showing address types
 
-- **Material-UI Design**: Modern, responsive interface with consistent theming
-- **Color-coded Addresses**: Visual indicators for input/output addresses
-- **Transaction Lists**: Organized by type with detailed information
-- **Real-time Updates**: Live data from your Bitcoin node
+### UTXO Flow Tracking
 
-## Prerequisites
+- **Change Address Detection**: Automatically identifies change outputs
+- **External Address Marking**: Distinguishes between internal and external addresses
+- **Parent-Child Relationships**: Tracks transaction dependencies
+- **Tree Building**: Constructs complete transaction trees from root transactions
 
-- Bitcoin Core node running with RPC enabled (optional for demo mode)
-- Node.js 18+ and yarn
+### Database Integration
 
-## Setup
+- **Persistent Comments**: Store and manage comments for each transaction
+- **Price Caching**: Cache historical Bitcoin prices to prevent redundant API calls
+- **SQLite Database**: Local storage with Prisma ORM
+- **Tree-Specific Data**: Comments tied to specific trees and transaction nodes
 
-1. **Clone and install dependencies**:
+### Price Data Integration
+
+- **External API**: CoinGecko integration for historical price data
+- **Smart Caching**: Prevents redundant API calls for confirmed transactions
+- **USD Value Display**: Shows both BTC amounts and USD values throughout the app
+- **Date-Based Pricing**: Historical prices for transaction dates
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Yarn package manager
+
+### Installation
+
+1. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/Portal-Doctor/bitcoin-cost-tracker.git
-   cd bitcoin-cost-tracker
+   git clone <repository-url>
+   cd bitcoin-cost
+   ```
+
+2. **Install dependencies**:
+
+   ```bash
    yarn install
    ```
 
-2. **Configure Bitcoin node connection**:
-
-   Create a `.env.local` file in the root directory:
-
-   ```env
-   BITCOIN_HOST=localhost
-   BITCOIN_PORT=8332
-   BITCOIN_USERNAME=bitcoin
-   BITCOIN_PASSWORD=your_bitcoin_rpc_password
-   ```
-
-3. **Configure Bitcoin Core RPC**:
-
-   Add these lines to your `bitcoin.conf` file:
-
-   ```conf
-   server=1
-   rpcuser=bitcoin
-   rpcpassword=your_secure_password
-   rpcallowip=127.0.0.1
-   rpcbind=127.0.0.1
-   ```
-
-4. **Set up the database** (required for comment functionality):
+3. **Set up the database**:
 
    ```bash
-   yarn db:generate
    yarn db:reset
+   yarn db:generate
    ```
 
-   > **Note**: The database file (`prisma/dev.db`) is not included in the repository. Each user needs to run the setup command to create their own local database.
+4. **Add your transaction data**:
 
-5. **Start the development server**:
+   - Place your CSV file in the `tmp/` directory as `all-txn.csv`
+   - CSV should have columns: Confirmed, Date, Type, Label, Address, Amount (BTC), ID
+
+5. **Run the development server**:
 
    ```bash
    yarn dev
    ```
 
-6. **Open your browser** and navigate to `http://localhost:3000`
+6. **Open your browser**:
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-## Usage
+## 📁 Project Structure
 
-### **Basic Workflow**
-
-1. **Enter Wallet Address**: Input your xpub address or specific Bitcoin address
-2. **Process Transactions**: Click "Track Transactions" to analyze your wallet
-3. **View Results**: Explore transaction summaries, lists, and detailed information
-
-### **Demo Mode**
-
-- Use `demo` as the wallet address to see sample data with various address types
-- Demonstrates single-sig, multi-sig, and different script types
-
-### **Address Analysis**
-
-- **Color-coded dots**:
-  - 🔴 Red = Input addresses (funds coming from)
-  - 🟢 Green = Output addresses (funds going to)
-  - 🟡 Yellow = Both input and output (change addresses)
-- **Address chips**: Show single-sig vs multi-sig with different colors
-- **Script type labels**: Display specific script types (P2PKH, P2SH, P2WPKH, P2WSH)
-
-## Transaction Types
-
-- **Purchases**: Incoming transactions (receiving Bitcoin)
-- **Sells**: Outgoing transactions (spending Bitcoin)
-- **Moves**: Internal transfers between your own addresses
-
-## Address Types Detected
-
-### **Single-Signature Addresses**
-
-- **P2PKH**: Legacy addresses starting with `1` (e.g., `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa`)
-- **P2WPKH**: Native SegWit addresses starting with `bc1q` (e.g., `bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4`)
-
-### **Multi-Signature Addresses**
-
-- **P2SH**: Multi-sig addresses starting with `3` (e.g., `3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy`)
-- **P2WSH**: Native SegWit multi-sig addresses starting with `bc1q` (longer format)
-- **Native MultiSig**: Direct multi-signature scripts
-
-## Cost Basis Calculation
-
-The application uses the FIFO (First In, First Out) method to calculate cost basis:
-
-- Purchase transactions add to your cost basis
-- Sell transactions calculate profit/loss based on average cost
-- Running balance and cost basis are updated with each transaction
-
-## API Documentation
-
-Access the interactive API documentation at `/api-docs` or click the "API Docs" button in the top-right corner.
-
-### **Available Endpoints**
-
-- `POST /api/transactions` - Process wallet transactions
-
-  - Body: `{ "walletAddress": "your_address" }`
-  - Returns: Transaction data with cost basis calculations and address analysis
-
-- `GET /api/comments?txid=xxx` - Get comments for a transaction
-
-  - Returns: Array of comments for the specified transaction
-
-- `POST /api/comments` - Create a new comment
-
-  - Body: `{ "txid": "transaction_id", "content": "comment_text" }`
-  - Returns: Created comment object
-
-- `DELETE /api/comments/[id]` - Delete a comment
-
-  - Returns: Success message
-
-- `GET /api/swagger` - OpenAPI specification
-  - Returns: Swagger documentation in JSON format
-
-## Database Commands
-
-```bash
-yarn db:reset      # Reset database (clears all data)
-yarn db:migrate    # Run database migrations
-yarn db:format     # Format Prisma schema
-yarn db:generate   # Generate Prisma client
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   │   ├── comments/      # Comment management endpoints
+│   │   └── transactions/  # Transaction data endpoint
+│   ├── page.tsx           # Tree list page
+│   └── tree/[id]/         # Tree explore page
+├── components/            # React components
+│   └── TransactionFlowDiagram.tsx
+├── lib/                   # Utility functions
+│   ├── bitcoin-utils.ts   # Core Bitcoin logic
+│   ├── price-service.ts   # Price data management
+│   └── comment-service.ts # Comment management
+├── types/                 # TypeScript definitions
+│   └── bitcoin.ts
+└── prisma/               # Database schema
+    └── schema.prisma
 ```
 
-## Environment Variables
+## 🛠️ Available Scripts
 
-| Variable           | Description               | Default         |
-| ------------------ | ------------------------- | --------------- |
-| `DATABASE_URL`     | SQLite database URL       | `file:./dev.db` |
-| `BITCOIN_HOST`     | Bitcoin Core RPC host     | `localhost`     |
-| `BITCOIN_PORT`     | Bitcoin Core RPC port     | `8332`          |
-| `BITCOIN_USERNAME` | Bitcoin Core RPC username | `bitcoin`       |
-| `BITCOIN_PASSWORD` | Bitcoin Core RPC password | `password`      |
+- `yarn dev` - Start development server with Turbopack
+- `yarn build` - Build for production
+- `yarn start` - Start production server
+- `yarn db:reset` - Reset and sync database
+- `yarn db:generate` - Generate Prisma client
+- `yarn db:migrate` - Run database migrations
+- `yarn lint` - Run ESLint
+- `yarn format` - Format code with ESLint
 
-## Technology Stack
+## 🗄️ Database Schema
 
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **UI Framework**: Material-UI (MUI) with Emotion styling
-- **Backend**: Next.js API routes
+### TreeComment
+
+- Stores comments for each transaction node within a tree
+- Unique constraint on treeId + nodeId combination
+- Timestamps for creation and updates
+
+### TransactionPrice
+
+- Caches Bitcoin price data to prevent redundant API calls
+- Stores price by transaction ID and date
+- Supports multiple price sources
+
+## 🔧 Architecture
+
+- **Frontend**: Next.js 15 with React 19
+- **UI Framework**: Material-UI (MUI) v7
 - **Database**: SQLite with Prisma ORM
-- **Bitcoin Integration**: bitcoin-core library
-- **Price Data**: Yahoo Finance API
-- **Documentation**: Swagger UI with OpenAPI 3.0
+- **Package Manager**: Yarn
+- **Build Tool**: Turbopack
+- **Language**: TypeScript
 
-## Security Notes
+## 🔑 Key Components
 
-- Never commit your `.env.local` file to version control
-- Use strong passwords for your Bitcoin Core RPC
-- Consider using testnet for development and testing
-- The application only reads transaction data, it cannot spend your Bitcoin
-- Database files are excluded from version control
+- **Bitcoin Utils**: Core logic for parsing CSV and building transaction trees
+- **Price Service**: External API integration with smart caching
+- **Comment Service**: Database operations for comment management
+- **Transaction Flow Diagram**: Visual component for UTXO flow representation
+- **Tree Explorer**: Detailed transaction view with commenting system
 
-## Troubleshooting
+## 🌳 Tree Building Algorithm
 
-### **Connection Issues**
+1. **Parse CSV**: Convert CSV data to structured transaction objects
+2. **Group by ID**: Handle multiple inputs/outputs per transaction
+3. **Build Relationships**: Establish parent-child relationships between transactions
+4. **Identify Change**: Detect change addresses and external outputs
+5. **Fetch Prices**: Get historical Bitcoin prices for all transactions
+6. **Construct Trees**: Build complete transaction trees from root transactions
+7. **Generate Summaries**: Create concise summaries for the tree list page
 
-- Verify Bitcoin Core is running and RPC is enabled
-- Check firewall settings
-- Ensure RPC credentials are correct
+## 💾 Data Persistence
 
-### **No Transactions Found**
+- **Comments**: Stored per transaction node per tree
+- **Price Data**: Cached by transaction ID and date
+- **No Redundant Calls**: Confirmed transactions won't trigger new price API calls
+- **SQLite Database**: Local storage with Prisma ORM
 
-- Verify the wallet address is correct
-- Check if the address has transaction history
-- Ensure your Bitcoin node is fully synced
+## 🔌 API Endpoints
 
-### **Price Data Missing**
+- `GET /api/transactions` - Serve CSV transaction data
+- `GET /api/comments?treeId=xxx&nodeId=xxx` - Get specific comment
+- `GET /api/comments?treeId=xxx` - Get all comments for a tree
+- `POST /api/comments` - Save a comment
+- `DELETE /api/comments?treeId=xxx&nodeId=xxx` - Delete a comment
 
-- Check internet connection for Yahoo Finance API
-- Some historical dates may not have price data available
-- Application includes fallback price generation
+## 🎨 UI Features
 
-### **Build Issues**
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Material Design**: Modern UI with Material-UI components
+- **Interactive Elements**: Hover effects, expand/collapse, tooltips
+- **Color Coding**: Visual indicators for address types and transaction status
+- **Loading States**: Proper loading indicators for async operations
 
-- Ensure all dependencies are installed: `yarn install`
-- Clear Next.js cache: `rm -rf .next`
-- Check TypeScript errors: `yarn lint`
+## 🔒 Security
 
-## Contributing
+- **Local Database**: All data stored locally
+- **No External Dependencies**: Price data cached to minimize external calls
+- **Input Validation**: Proper validation for all user inputs
+- **Error Handling**: Graceful error handling throughout the application
+
+## 📈 Performance
+
+- **Smart Caching**: Price data cached to prevent redundant API calls
+- **Efficient Tree Building**: Optimized algorithms for large transaction sets
+- **Lazy Loading**: Components load data on demand
+- **Optimized Build**: Turbopack for faster development and builds
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Run tests and linting
 5. Submit a pull request
 
-## License
+## 📄 License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License.
+
+## 🆘 Troubleshooting
+
+### Prisma Generation Issues
+
+If you encounter permission errors during `yarn prisma generate`:
+
+1. Stop any running Node.js processes
+2. Run `yarn prisma generate` again
+3. If issues persist, try `yarn db:reset` to reset the database
+
+### Build Issues
+
+- Ensure all dependencies are installed with `yarn install`
+- Clear Next.js cache with `rm -rf .next`
+- Regenerate Prisma client with `yarn db:generate`
+
+### Database Issues
+
+- Reset database with `yarn db:reset`
+- Check `.env` file for correct DATABASE_URL
+- Ensure SQLite is properly configured
