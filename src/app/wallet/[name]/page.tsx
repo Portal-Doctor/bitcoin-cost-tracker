@@ -408,17 +408,12 @@ export default function WalletPage() {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="body2" sx={{ flexGrow: 1 }}>
-                            {transactionLabels.get(tx.txid)?.label || tx.label || 'No label'}
-                          </Typography>
-                          <TransactionLabelEditor
-                            txid={tx.txid}
-                            walletName={walletName}
-                            currentLabel={transactionLabels.get(tx.txid)?.label || tx.label}
-                            onLabelChange={(label) => handleLabelChange(tx.txid, label)}
-                          />
-                        </Box>
+                        <TransactionLabelEditor
+                          txid={tx.txid}
+                          walletName={walletName}
+                          currentLabel={transactionLabels.get(tx.txid)?.label || tx.label}
+                          onLabelChange={(label) => handleLabelChange(tx.txid, label)}
+                        />
                       </TableCell>
                       <TableCell>
                         <Chip

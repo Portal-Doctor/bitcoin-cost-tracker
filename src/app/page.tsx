@@ -297,6 +297,115 @@ export default function HomePage() {
     }
   };
 
+  const loadTransactionTrees = async () => {
+    try {
+      setLoadingDb(true);
+      setDbProgress(0);
+      setDbProgressText('Loading transaction trees to database...');
+
+      const response = await fetch('/api/database/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'trees' })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setDbProgress(100);
+        setDbProgressText(`Loaded ${result.count} transaction trees to database`);
+        
+        // Refresh database status
+        await checkDatabaseStatus();
+      } else {
+        throw new Error('Failed to load transaction trees to database');
+      }
+    } catch (error) {
+      console.error('Error loading transaction trees to database:', error);
+      setDbProgressText('Error loading transaction trees to database');
+    } finally {
+      setLoadingDb(false);
+    }
+  };
+
+  const loadAllData = async () => {
+    try {
+      setLoadingDb(true);
+      setDbProgress(0);
+      setDbProgressText('Loading all data to database...');
+
+      const response = await fetch('/api/database/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'all' })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setDbProgress(100);
+        setDbProgressText(`Loaded ${result.wallets?.count || 0} wallets and ${result.trees?.count || 0} transaction trees to database`);
+        
+        // Refresh database status
+        await checkDatabaseStatus();
+        
+        // Reload wallets from database
+        await loadWallets(true);
+      } else {
+        throw new Error('Failed to load all data to database');
+      }
+    } catch (error) {
+      console.error('Error loading all data to database:', error);
+      setDbProgressText('Error loading all data to database');
+    } finally {
+      setLoadingDb(false);
+    }
+  };
+
+  const clearAndReloadAll = async () => {
+    try {
+      setLoadingDb(true);
+      setDbProgress(0);
+      setDbProgressText('Clearing all data...');
+
+      // Clear wallet data
+      const clearResponse = await fetch('/api/database/clear-wallets', {
+        method: 'POST'
+      });
+
+      if (!clearResponse.ok) {
+        throw new Error('Failed to clear wallet data');
+      }
+
+      setDbProgress(25);
+      setDbProgressText('Loading all data to database...');
+
+      // Load all data (wallets and transaction trees)
+      const loadResponse = await fetch('/api/database/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'all' })
+      });
+
+      if (loadResponse.ok) {
+        const result = await loadResponse.json();
+        setDbProgress(100);
+        setDbProgressText(`Loaded ${result.wallets?.count || 0} wallets and ${result.trees?.count || 0} transaction trees to database`);
+        
+        // Refresh database status
+        await checkDatabaseStatus();
+        
+        // Reload wallets from database
+        await loadWallets(true);
+      } else {
+        throw new Error('Failed to load all data to database');
+      }
+    } catch (error) {
+      console.error('Error clearing and reloading all data:', error);
+      setDbProgressText('Error clearing and reloading all data');
+    } finally {
+      setLoadingDb(false);
+    }
+  };
+
   const updatePrices = async () => {
     try {
       setUpdatingPrices(true);
@@ -398,6 +507,25 @@ export default function HomePage() {
               </Button>
               <Button
                 variant="outlined"
+                startIcon={<Refresh />}
+                onClick={loadTransactionTrees}
+                disabled={loadingDb}
+                size="small"
+              >
+                Load Transaction Trees
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<Refresh />}
+                onClick={loadAllData}
+                disabled={loadingDb}
+                size="small"
+              >
+                Load All Data
+              </Button>
+              <Button
+                variant="outlined"
                 color="warning"
                 startIcon={<Refresh />}
                 onClick={clearAndReloadWallets}
@@ -405,6 +533,16 @@ export default function HomePage() {
                 size="small"
               >
                 Clear & Reload Wallets
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<Refresh />}
+                onClick={clearAndReloadAll}
+                disabled={loadingDb}
+                size="small"
+              >
+                Clear & Reload All
               </Button>
             </Box>
           </Box>

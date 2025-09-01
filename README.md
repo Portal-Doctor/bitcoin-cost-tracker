@@ -4,7 +4,22 @@ A comprehensive Next.js application for visualizing Bitcoin transaction trees wi
 
 ## 🌟 Features
 
-### Tree List Page
+### Dashboard & Data Management
+
+- **Dual Data Sources**: Support for both wallet-specific and full-node transaction data
+- **Flexible Loading**: Load wallets, transaction trees, or all data together
+- **Database Status**: Real-time status of loaded wallets and transaction trees
+- **Price Management**: Automatic Bitcoin price fetching and caching
+
+### Wallet Management
+
+- **Individual Wallet Views**: Detailed transaction history for each wallet
+- **Wallet Relationships**: Identify transactions that connect multiple wallets
+- **Transaction Labels**: Add custom labels to transactions with full CRUD operations
+- **UTXO Tree Visualization**: Track UTXO flow for individual transactions
+- **Search Functionality**: Global and wallet-specific transaction search
+
+### Transaction Tree Visualization
 
 - **Transaction Tree Overview**: View all root transactions with total Bitcoin amounts and USD values
 - **Tree Summaries**: See transaction counts, date ranges, and descriptions for each tree
@@ -85,8 +100,22 @@ A comprehensive Next.js application for visualizing Bitcoin transaction trees wi
 
 4. **Add your transaction data**:
 
-   - Place your CSV file in the `tmp/` directory as `all-txn.csv`
-   - CSV should have columns: Confirmed, Date, Type, Label, Address, Amount (BTC), ID
+   The application requires two types of CSV files:
+
+   **Wallet Data** (`tmp/wallets/` directory):
+
+   - Export individual wallet transactions from Sparrow Wallet
+   - Go to File → Export Wallet → Transactions
+   - Place CSV files in `tmp/wallets/` directory
+   - Format: `Date (UTC),Label,Value,Balance,Fee,Txid`
+   - Example filename: `mywallet-transactions.csv`
+
+   **Transaction Trees** (`tmp/all-txn.csv`):
+
+   - Export all transactions from your Bitcoin node (Core or Knots)
+   - Place the CSV file in `tmp/` directory as `all-txn.csv`
+   - Format: `Confirmed,Date,Type,Label,Address,Amount (BTC),ID`
+   - Used for building transaction trees and UTXO flow visualization
 
 5. **Run the development server**:
 
@@ -97,26 +126,48 @@ A comprehensive Next.js application for visualizing Bitcoin transaction trees wi
 6. **Open your browser**:
    Navigate to [http://localhost:3000](http://localhost:3000)
 
+7. **Load your data**:
+   - Click "Load Wallets" to load individual wallet CSV files
+   - Click "Load Transaction Trees" to load the all-txn.csv file
+   - Click "Load All Data" to load both wallets and transaction trees
+   - Use "Clear & Reload" options to refresh data after making changes
+
 ## 📁 Project Structure
 
 ```
-src/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   ├── comments/      # Comment management endpoints
-│   │   └── transactions/  # Transaction data endpoint
-│   ├── page.tsx           # Tree list page
-│   └── tree/[id]/         # Tree explore page
-├── components/            # React components
-│   └── TransactionFlowDiagram.tsx
-├── lib/                   # Utility functions
-│   ├── bitcoin-utils.ts   # Core Bitcoin logic
-│   ├── price-service.ts   # Price data management
-│   └── comment-service.ts # Comment management
-├── types/                 # TypeScript definitions
-│   └── bitcoin.ts
-└── prisma/               # Database schema
-    └── schema.prisma
+bitcoin-cost/
+├── src/                   # Source code
+│   ├── app/              # Next.js App Router
+│   │   ├── api/          # API routes
+│   │   │   ├── comments/ # Comment management endpoints
+│   │   │   ├── database/ # Database operations
+│   │   │   ├── wallets/  # Wallet data endpoints
+│   │   │   └── utxo-tree/ # UTXO tree endpoints
+│   │   ├── page.tsx      # Dashboard page
+│   │   ├── wallet/[name] # Wallet detail pages
+│   │   ├── tree/[id]/    # Tree explore page
+│   │   └── utxo-tree/[txid] # UTXO tree page
+│   ├── components/       # React components
+│   │   ├── TransactionFlowDiagram.tsx
+│   │   ├── TransactionLabelEditor.tsx
+│   │   └── TransactionSearch.tsx
+│   ├── lib/              # Utility functions
+│   │   ├── bitcoin-utils.ts    # Core Bitcoin logic
+│   │   ├── price-service.ts    # Price data management
+│   │   ├── database-service.ts # Database operations
+│   │   ├── wallet-service.ts   # Wallet operations
+│   │   └── utxo-tracing-service.ts # UTXO tracing
+│   └── types/            # TypeScript definitions
+│       └── bitcoin.ts
+├── tmp/                  # Data files
+│   ├── wallets/          # Individual wallet CSV files
+│   │   ├── wallet1-transactions.csv
+│   │   └── wallet2-transactions.csv
+│   └── all-txn.csv       # All transactions from Bitcoin node
+├── prisma/               # Database schema
+│   └── schema.prisma
+└── scripts/              # Database setup scripts
+    └── setup-db.js
 ```
 
 ## 🛠️ Available Scripts
