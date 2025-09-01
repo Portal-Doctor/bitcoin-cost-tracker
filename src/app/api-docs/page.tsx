@@ -1,5 +1,5 @@
 import { Container, Typography, Box, Paper, Button } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
+import { ArrowBack, Home } from '@mui/icons-material';
 import SwaggerUIComponent from '../../components/SwaggerUI';
 
 export default function ApiDocsPage() {
@@ -16,14 +16,24 @@ export default function ApiDocsPage() {
                 Interactive documentation for the Bitcoin Cost Basis Tracker API
               </Typography>
             </Box>
-            <Button
-              href="/"
-              variant="contained"
-              startIcon={<ArrowBack />}
-              sx={{ minWidth: 120 }}
-            >
-              Back to App
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                href="/"
+                variant="contained"
+                startIcon={<ArrowBack />}
+                sx={{ minWidth: 120 }}
+              >
+                Back to App
+              </Button>
+              <Button
+                href="/"
+                variant="outlined"
+                startIcon={<Home />}
+                sx={{ minWidth: 120 }}
+              >
+                Home
+              </Button>
+            </Box>
           </Box>
         </Container>
       </Paper>

@@ -38,7 +38,8 @@ import {
   Timeline,
   AttachMoney,
   Delete,
-  AccountBalanceWallet
+  AccountBalanceWallet,
+  Home
 } from '@mui/icons-material';
 import { TransactionTree, TransactionNode, AddressInfo } from '@/types/bitcoin';
 import { parseCSVData, buildTransactionTrees, getAddressType, formatBitcoinAmount, formatUSD, formatDate } from '@/lib/bitcoin-utils';
@@ -709,13 +710,21 @@ export default function TreeExplorePage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={() => router.push('/')}
-          sx={{ mb: 2 }}
-        >
-          Back to Trees
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={() => router.push('/')}
+          >
+            Back to Trees
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Home />}
+            onClick={() => router.push('/')}
+          >
+            Home
+          </Button>
+        </Box>
 
                  <Typography variant="h4" component="h1" gutterBottom>
            <AccountTree sx={{ mr: 2, verticalAlign: 'middle' }} />

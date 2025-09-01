@@ -32,7 +32,8 @@ import {
   CheckCircle,
   Schedule,
   AccountTree,
-  OpenInNew
+  OpenInNew,
+  Home
 } from '@mui/icons-material';
 import { WalletTransaction, WalletStats } from '@/lib/wallet-service';
 import { WalletService } from '@/lib/wallet-service';
@@ -239,14 +240,22 @@ export default function WalletPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBack />}
-          onClick={() => router.back()}
-          sx={{ mb: 2 }}
-        >
-          Back
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBack />}
+            onClick={() => router.back()}
+          >
+            Back
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Home />}
+            onClick={() => router.push('/')}
+          >
+            Home
+          </Button>
+        </Box>
         
         <Typography variant="h3" component="h1" gutterBottom>
           <AccountBalanceWallet sx={{ mr: 2, verticalAlign: 'middle' }} />

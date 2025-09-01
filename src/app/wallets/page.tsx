@@ -16,7 +16,8 @@ import {
 } from '@mui/material';
 import {
   Refresh,
-  FolderOpen
+  FolderOpen,
+  Home
 } from '@mui/icons-material';
 import { WalletTransaction, WalletService } from '@/lib/wallet-service';
 import { WalletCSVData } from '@/types/bitcoin';
@@ -81,6 +82,15 @@ export default function WalletsPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<Home />}
+            onClick={() => window.location.href = '/'}
+          >
+            Home
+          </Button>
+        </Box>
         <Typography variant="h3" component="h1" gutterBottom align="center">
           Wallet Management
         </Typography>
