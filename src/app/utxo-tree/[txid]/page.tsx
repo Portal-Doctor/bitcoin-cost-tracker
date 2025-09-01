@@ -41,6 +41,7 @@ interface UTXONode {
   children: UTXONode[];
   level: number;
   path: string[];
+  nodeType: 'parent' | 'current' | 'child'; // To distinguish the relationship
 }
 
 interface UTXOTreeData {
@@ -119,15 +120,30 @@ export default function UTXOTreePage() {
   const renderUTXONode = (node: UTXONode, depth: number = 0) => {
     const indent = depth * 40;
     
+    // Determine card styling based on node type
+    let cardStyle = {
+      ml: indent,
+      border: '1px solid #e0e0e0',
+      backgroundColor: 'white'
+    };
+    
+    if (node.txid === txid) {
+      cardStyle = {
+        ...cardStyle,
+        border: '2px solid #1976d2',
+        backgroundColor: '#f3f8ff'
+      };
+    } else if (node.nodeType === 'parent') {
+      cardStyle = {
+        ...cardStyle,
+        border: '1px solid #ff9800',
+        backgroundColor: '#fff3e0'
+      };
+    }
+    
     return (
       <Box key={`${node.txid}-${node.walletName}-${node.type}`} sx={{ mb: 2 }}>
-        <Card 
-          sx={{ 
-            ml: indent,
-            border: node.txid === txid ? '2px solid #1976d2' : '1px solid #e0e0e0',
-            backgroundColor: node.txid === txid ? '#f3f8ff' : 'white'
-          }}
-        >
+        <Card sx={cardStyle}>
           <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
               <Chip
@@ -147,14 +163,30 @@ export default function UTXOTreePage() {
                 clickable
                 onClick={() => router.push(`/wallet/${node.walletName}?txid=${node.txid}`)}
               />
-              {node.txid === txid && (
-                <Chip
-                  label="Root UTXO"
-                  size="small"
-                  color="primary"
-                  variant="filled"
-                />
-              )}
+                             {node.txid === txid && (
+                 <Chip
+                   label="Root UTXO"
+                   size="small"
+                   color="primary"
+                   variant="filled"
+                 />
+               )}
+               {node.nodeType === 'parent' && (
+                 <Chip
+                   label="Input UTXO"
+                   size="small"
+                   color="warning"
+                   variant="filled"
+                 />
+               )}
+               {node.nodeType === 'child' && node.txid !== txid && (
+                 <Chip
+                   label="Output UTXO"
+                   size="small"
+                   color="secondary"
+                   variant="filled"
+                 />
+               )}
             </Box>
             
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 1 }}>

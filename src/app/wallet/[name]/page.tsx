@@ -74,6 +74,7 @@ export default function WalletPage() {
   const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
   const [transactionLabels, setTransactionLabels] = useState<Map<string, TransactionLabel>>(new Map());
   const [showAmountInBTC, setShowAmountInBTC] = useState(false);
+  const [showUSDValue, setShowUSDValue] = useState(true); // true = USD Value, false = USD Cost of 1 Bitcoin
 
   useEffect(() => {
     if (walletName) {
@@ -371,7 +372,16 @@ export default function WalletPage() {
                         </Button>
                       </Box>
                     </TableCell>
-                    <TableCell align="right">USD Value</TableCell>
+                    <TableCell align="right">
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+          <Typography variant="subtitle2">
+            {showUSDValue ? 'USD Value' : 'Bitcoin Price'}
+          </Typography>
+          <Button size="small" variant="outlined" onClick={() => setShowUSDValue(!showUSDValue)} sx={{ minWidth: 'auto', px: 1 }}>
+            {showUSDValue ? 'Cost' : 'Value'}
+          </Button>
+        </Box>
+      </TableCell>
                     <TableCell align="right">Fee (sats)</TableCell>
                     <TableCell align="right">Balance (sats)</TableCell>
                     <TableCell align="center">Status</TableCell>
@@ -427,11 +437,11 @@ export default function WalletPage() {
                           {showAmountInBTC ? formatAmount(tx.amount) : formatSats(tx.value)}
                         </Typography>
                       </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" color="text.secondary">
-                          {tx.priceUSD ? formatUSD(tx.priceUSD) : 'N/A'}
-                        </Typography>
-                      </TableCell>
+                            <TableCell align="right">
+        <Typography variant="body2" color="text.secondary">
+          {tx.priceUSD ? (showUSDValue ? formatUSD(tx.priceUSD) : formatUSD(tx.priceUSD / Math.abs(tx.value) * 100000000)) : 'N/A'}
+        </Typography>
+      </TableCell>
                       <TableCell align="right">
                         <Typography variant="body2" color="text.secondary">
                           {tx.fee > 0 ? formatSats(tx.fee) : '-'}

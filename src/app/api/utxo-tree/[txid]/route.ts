@@ -35,10 +35,10 @@ interface UTXOTreeData {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { txid: string } }
+  { params }: { params: Promise<{ txid: string }> }
 ) {
   try {
-    const txid = params.txid;
+    const { txid } = await params;
 
     if (!txid) {
       return NextResponse.json(
@@ -89,7 +89,10 @@ export async function GET(
 
 async function buildUTXOTree(rootTransaction: any, rootTxid: string): Promise<UTXOTreeData | null> {
   try {
+    console.log(`[buildUTXOTree] Starting tree build for txid: ${rootTxid}`);
+    
     // Get all transactions to build the flow
+    console.log(`[buildUTXOTree] Fetching all transactions...`);
     const allTransactions = await prisma.walletTransaction.findMany({
       include: {
         walletCSV: {
@@ -98,8 +101,10 @@ async function buildUTXOTree(rootTransaction: any, rootTxid: string): Promise<UT
       },
       orderBy: { date: 'asc' }
     });
+    console.log(`[buildUTXOTree] Found ${allTransactions.length} total transactions`);
 
     // Create a map of transactions by txid
+    console.log(`[buildUTXOTree] Creating transaction map...`);
     const txMap = new Map<string, any[]>();
     allTransactions.forEach(tx => {
       if (!txMap.has(tx.txid)) {
@@ -107,16 +112,23 @@ async function buildUTXOTree(rootTransaction: any, rootTxid: string): Promise<UT
       }
       txMap.get(tx.txid)!.push(tx);
     });
+    console.log(`[buildUTXOTree] Created map with ${txMap.size} unique transaction IDs`);
 
     // Build the complete tree starting from the root
+    console.log(`[buildUTXOTree] Building complete UTXO node tree...`);
     const rootNode = await buildCompleteUTXONode(rootTransaction, txMap, rootTxid, 0, [rootTxid]);
     
     if (!rootNode) {
+      console.log(`[buildUTXOTree] Failed to build root node`);
       return null;
     }
 
+    console.log(`[buildUTXOTree] Successfully built root node with ${rootNode.children.length} children`);
+
     // Calculate tree statistics
+    console.log(`[buildUTXOTree] Calculating tree statistics...`);
     const stats = calculateTreeStats(rootNode);
+    console.log(`[buildUTXOTree] Tree stats calculated: ${stats.transactionCount} transactions, ${stats.walletCount} wallets`);
 
     return {
       root: rootNode,
@@ -136,7 +148,19 @@ async function buildCompleteUTXONode(
   level: number, 
   path: string[]
 ): Promise<UTXONode | null> {
+  // Add safety check to prevent infinite recursion
+  if (level < -5 || level > 5) {
+    console.log(`[buildCompleteUTXONode] Stopping recursion at level ${level} for txid: ${transaction.txid}`);
+    return null;
+  }
+  
+  if (path.length > 10) {
+    console.log(`[buildCompleteUTXONode] Stopping recursion due to path length ${path.length} for txid: ${transaction.txid}`);
+    return null;
+  }
   try {
+    console.log(`[buildCompleteUTXONode] Building node for txid: ${transaction.txid}, level: ${level}, path length: ${path.length}`);
+    
     // Create the current node
     const node: UTXONode = {
       txid: transaction.txid,
@@ -151,31 +175,44 @@ async function buildCompleteUTXONode(
       confirmed: transaction.confirmed,
       children: [],
       level,
-      path: [...path]
+      path: [...path],
+      nodeType: transaction.txid === rootTxid ? 'current' : 'child'
     };
 
     // Find parent transactions (transactions that created this UTXO as input)
+    console.log(`[buildCompleteUTXONode] Finding parent transactions for ${transaction.txid}...`);
     const parentTransactions = await findParentTransactions(transaction, txMap, path);
+    console.log(`[buildCompleteUTXONode] Found ${parentTransactions.length} parent transactions`);
     
     // Find child transactions (transactions that spend this UTXO)
+    console.log(`[buildCompleteUTXONode] Finding child transactions for ${transaction.txid}...`);
     const childTransactions = await findChildTransactions(transaction, txMap, path);
+    console.log(`[buildCompleteUTXONode] Found ${childTransactions.length} child transactions`);
     
     // Build parent nodes (inputs that were combined)
-    for (const parentTx of parentTransactions) {
+    console.log(`[buildCompleteUTXONode] Building ${parentTransactions.length} parent nodes...`);
+    for (let i = 0; i < parentTransactions.length; i++) {
+      const parentTx = parentTransactions[i];
+      console.log(`[buildCompleteUTXONode] Building parent ${i + 1}/${parentTransactions.length}: ${parentTx.txid}`);
       const parentNode = await buildCompleteUTXONode(parentTx, txMap, rootTxid, level - 1, [...path, parentTx.txid]);
       if (parentNode) {
+        parentNode.nodeType = 'parent';
         node.children.unshift(parentNode); // Add parents at the beginning
       }
     }
     
     // Build child nodes (outputs that spend this UTXO)
-    for (const childTx of childTransactions) {
+    console.log(`[buildCompleteUTXONode] Building ${childTransactions.length} child nodes...`);
+    for (let i = 0; i < childTransactions.length; i++) {
+      const childTx = childTransactions[i];
+      console.log(`[buildCompleteUTXONode] Building child ${i + 1}/${childTransactions.length}: ${childTx.txid}`);
       const childNode = await buildCompleteUTXONode(childTx, txMap, rootTxid, level + 1, [...path, childTx.txid]);
       if (childNode) {
         node.children.push(childNode);
       }
     }
 
+    console.log(`[buildCompleteUTXONode] Completed node ${transaction.txid} with ${node.children.length} total children`);
     return node;
 
   } catch (error) {
@@ -190,35 +227,32 @@ async function findParentTransactions(
   path: string[]
 ): Promise<any[]> {
   try {
+    console.log(`[findParentTransactions] Looking for parents of ${childTransaction.txid} (type: ${childTransaction.type})`);
     const parentTransactions: any[] = [];
 
-    // Look for transactions that might have created this UTXO
+    // For an input transaction, we need to find the transaction that created this UTXO
+    // In Bitcoin, an input references a previous transaction's output
+    // We need to find transactions in our system that have this txid as an output
+    
+    // Look through all transactions to find ones that might have created this UTXO
     for (const [txid, transactions] of txMap.entries()) {
       // Skip if this transaction is already in the path (avoid cycles)
       if (path.includes(txid)) {
         continue;
       }
 
-      // Check if any of these transactions could be the parent of this UTXO
       for (const tx of transactions) {
-        // If this transaction is an output and the child is an input, it might be related
-        if (tx.type === 'output' && childTransaction.type === 'input') {
-          // Check if the dates make sense (parent should be before child)
-          if (tx.date < childTransaction.date) {
-            // Check if the amounts are related (simplified heuristic)
-            const amountRatio = Math.abs(childTransaction.value) / Math.abs(tx.value);
-            if (amountRatio > 0.1 && amountRatio < 10) { // Within reasonable range
-              parentTransactions.push(tx);
-            }
-          }
+        // If this transaction is an output and it's from the same transaction ID as our input
+        // and the dates make sense (output before input)
+        if (tx.type === 'output' && tx.txid === childTransaction.txid && tx.date < childTransaction.date) {
+          console.log(`[findParentTransactions] Found parent transaction: ${tx.txid} (output that created this input)`);
+          parentTransactions.push(tx);
         }
       }
     }
 
-    // Sort by date and limit to prevent infinite trees
-    return parentTransactions
-      .sort((a, b) => b.date.getTime() - a.date.getTime()) // Reverse sort for parents
-      .slice(0, 3); // Limit to 3 parents to prevent explosion
+    console.log(`[findParentTransactions] Found ${parentTransactions.length} parent transactions for ${childTransaction.txid}`);
+    return parentTransactions;
 
   } catch (error) {
     console.error('Error finding parent transactions:', error);
@@ -232,38 +266,30 @@ async function findChildTransactions(
   path: string[]
 ): Promise<any[]> {
   try {
+    console.log(`[findChildTransactions] Looking for children of ${parentTransaction.txid} (type: ${parentTransaction.type})`);
     const childTransactions: any[] = [];
-    const parentTxid = parentTransaction.txid;
 
-    // Look for transactions that might be spending this UTXO
-    // This is a simplified approach - in a real implementation, you'd need to track actual UTXO outputs
+    // For an output transaction, we need to find transactions that spend this UTXO
+    // Look for input transactions that reference this transaction's output
+    
     for (const [txid, transactions] of txMap.entries()) {
       // Skip if this transaction is already in the path (avoid cycles)
       if (path.includes(txid)) {
         continue;
       }
 
-      // Check if any of these transactions could be spending the parent UTXO
-      // This is a heuristic - in reality, you'd need to track actual UTXO references
       for (const tx of transactions) {
-        // If this transaction is an input and the parent was an output, it might be related
-        if (tx.type === 'input' && parentTransaction.type === 'output') {
-          // Check if the dates make sense (child should be after parent)
-          if (tx.date > parentTransaction.date) {
-            // Check if the amounts are related (simplified heuristic)
-            const amountRatio = Math.abs(tx.value) / Math.abs(parentTransaction.value);
-            if (amountRatio > 0.1 && amountRatio < 10) { // Within reasonable range
-              childTransactions.push(tx);
-            }
-          }
+        // If this transaction is an input and it references the parent transaction's output
+        // and the dates make sense (input after output)
+        if (tx.type === 'input' && tx.txid === parentTransaction.txid && tx.date > parentTransaction.date) {
+          console.log(`[findChildTransactions] Found child transaction: ${tx.txid} (input that spends this output)`);
+          childTransactions.push(tx);
         }
       }
     }
 
-    // Sort by date and limit to prevent infinite trees
-    return childTransactions
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .slice(0, 5); // Limit to 5 children to prevent explosion
+    console.log(`[findChildTransactions] Found ${childTransactions.length} child transactions for ${parentTransaction.txid}`);
+    return childTransactions;
 
   } catch (error) {
     console.error('Error finding child transactions:', error);
