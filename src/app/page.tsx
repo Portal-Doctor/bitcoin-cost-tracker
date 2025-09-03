@@ -23,6 +23,7 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import TransactionSearch from '@/components/TransactionSearch';
+import GlobalCommentSearch from '@/components/GlobalCommentSearch';
 
 interface WalletInfo {
   id: string;
@@ -472,6 +473,9 @@ export default function HomePage() {
 
       {/* Transaction Search Section */}
       <TransactionSearch />
+
+      {/* Global Comment Search Section */}
+      <GlobalCommentSearch />
 
       {/* Database Status Section */}
       <Box sx={{ mb: 4 }}>

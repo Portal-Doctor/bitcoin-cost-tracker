@@ -2,6 +2,14 @@
 
 A comprehensive Next.js application for visualizing Bitcoin transaction trees with UTXO flow tracking, price data integration, and persistent commenting system.
 
+I built this for tax time so I could track UTXO's through my various wallets as I consolidated, added to, and sometimes (gasp) spent. I needed a way to organize the movements so I can have accurate tax records.
+
+If you run a node, you can extract your transactions and load them into the application. It all stays on your machine, you its private for you. This works, even if you have a pruned node. In fact, this works even if you do not run a node at all (although it is better if you do).
+
+I use Sparrow to manage my cold storage wallets, so I can extract the wallet data (as shown below) and import the transaction data.
+
+Feel free to use this if you would like. Sharing with the world as FOSS.
+
 ## 🌟 Features
 
 ### Dashboard & Data Management
